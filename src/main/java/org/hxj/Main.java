@@ -1,18 +1,12 @@
 package org.hxj;
 
 import lombok.extern.slf4j.Slf4j;
-import org.hxj.annotation.HxjMapperScan;
-import org.hxj.config.MysqlConfig;
+import org.hxj.annotation.MiniMapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.stereotype.Service;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 @Slf4j
-@HxjMapperScan("org.hxj.mapper")
+@MiniMapperScan("org.hxj.mapper")
 @SpringBootApplication
 public class Main {
     public static void main(String[] args) {

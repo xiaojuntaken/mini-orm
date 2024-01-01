@@ -2,24 +2,23 @@ package org.hxj.annotation;
 
 import lombok.extern.slf4j.Slf4j;
 import org.hxj.config.MysqlConfig;
+import org.hxj.entity.po.Activity;
+import org.hxj.factory.MapperFactory;
+import org.hxj.mapper.ActivityMapper;
 import org.hxj.utils.ClassLoadUtils;
 import org.hxj.utils.MysqlUtils;
 import org.hxj.utils.StatementUtils;
 import org.hxj.utils.StringUtils;
-import org.springframework.beans.factory.support.BeanDefinitionRegistry;
-import org.springframework.beans.factory.support.BeanNameGenerator;
+import org.springframework.beans.factory.support.*;
 import org.springframework.context.ResourceLoaderAware;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
-import org.springframework.core.annotation.MergedAnnotations;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.type.AnnotationMetadata;
-import org.springframework.core.type.MethodMetadata;
 
-import java.io.IOException;
-import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.sql.Connection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,17 +28,36 @@ import java.util.Set;
  * postProcessBeanDefinitionRegistry方法，注册到spring容器中。
  */
 @Slf4j
-public class HxjMapperScanRegister implements ImportBeanDefinitionRegistrar, ResourceLoaderAware {
+public class MiniMapperScanRegister implements ImportBeanDefinitionRegistrar, ResourceLoaderAware {
+    public static Map<String, Class<?>> poMap = new HashMap<>();
+
     @Override
     public void setResourceLoader(ResourceLoader resourceLoader) {
     }
 
 
+    /**
+     * 通过注解HxjMapperScan的值，获取所有的mapper接口
+     *
+     * @param importingClassMetadata
+     * @param registry
+     */
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
-        Set<String> annotationTypes = importingClassMetadata.getAnnotationTypes();
+        //创建beanfactory构造器 00 00  00
+        BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(ActivityMapper.class);
+        //创建beanDefinition
+        GenericBeanDefinition beanDefinition = (GenericBeanDefinition) beanDefinitionBuilder.getRawBeanDefinition();
+        beanDefinition.getConstructorArgumentValues().addGenericArgumentValue(ActivityMapper.class);
+        //将bean的真实类型改变为FactoryBea
+        beanDefinition.setBeanClass(MapperFactory.class);
+        beanDefinition.getPropertyValues().add("interfaceClass", ActivityMapper.class);
+        beanDefinition.setAutowireMode(GenericBeanDefinition.AUTOWIRE_BY_TYPE);
+        registry.registerBeanDefinition(ActivityMapper.class.getSimpleName(), beanDefinition);
+
+
         //获取有@import注解的值
-        Map<String, Object> annotationAttributes = importingClassMetadata.getAnnotationAttributes(HxjMapperScan.class.getName());
+        Map<String, Object> annotationAttributes = importingClassMetadata.getAnnotationAttributes(MiniMapperScan.class.getName());
         assert annotationAttributes != null;
         Set<String> keySet = annotationAttributes.keySet();
         for (String key : keySet) {
@@ -48,6 +66,17 @@ public class HxjMapperScanRegister implements ImportBeanDefinitionRegistrar, Res
                 //根据包名获取类集合
                 List<Class<?>> clazzList = ClassLoadUtils.getClassesByPackageName(packageName);
                 for (Class<?> clazz : clazzList) {
+                    //将包下的接口注册生成BeanDefinition
+                    String name = clazz.getName();
+
+
+//                    BeanDefinitionBuilder beanDefinitionBuilder= BeanDefinitionBuilder.genericBeanDefinition(ActivityMapper.class);
+//                    GenericBeanDefinition  beanDefinition = (GenericBeanDefinition) beanDefinitionBuilder.getRawBeanDefinition();
+//                    beanDefinition.getConstructorArgumentValues().addGenericArgumentValue(clazz);
+//                    beanDefinition.setBeanClass(MapperFactory.class);
+//                    beanDefinition.setAutowireMode(GenericBeanDefinition.AUTOWIRE_BY_TYPE);
+//                    registry.registerBeanDefinition(clazz.getSimpleName(),beanDefinition);
+
                     //获取继承的接口
                     Type[] genericInterfaces = clazz.getGenericInterfaces();
                     for (Type interfaces : genericInterfaces) {
@@ -57,11 +86,13 @@ public class HxjMapperScanRegister implements ImportBeanDefinitionRegistrar, Res
                             //接口继承接口的泛型-实体类泛型
                             String modelClass = type.getTypeName();
                             Class<?> modelClazz = Class.forName(modelClass);
+                            poMap.put(modelClazz.getSimpleName(), modelClazz);
                             String resultSql = MysqlUtils.packageResultSqlByClass(modelClazz);
+                            String resultSql1 = MysqlUtils.packageResultSqlByClass(poMap.get(modelClazz.getSimpleName()));
                             String tableName = StringUtils.toUnderScoreCase(modelClazz.getSimpleName());
                             String sql = MysqlUtils.packBaseSql(resultSql, tableName, "");
                             Connection connection = MysqlConfig.connectionMysql();
-                            StatementUtils.querySql(connection,sql);
+                            StatementUtils.querySql(connection, sql);
                         }
                     }
                 }
@@ -69,9 +100,6 @@ public class HxjMapperScanRegister implements ImportBeanDefinitionRegistrar, Res
                 throw new RuntimeException(e);
             }
         }
-
-        Set<MethodMetadata> annotatedMethods = importingClassMetadata.getDeclaredMethods();
-        System.out.println("=============registerBeanDefinitions============");
     }
 
 }

@@ -8,7 +8,7 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Documented
-@Import(HxjMapperScanRegister.class)
-public @interface HxjMapperScan {
+@Import(MiniMapperScanRegister.class)
+public @interface MiniMapperScan {
     String value() default "";
 }

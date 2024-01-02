@@ -8,8 +8,8 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 
 /**
- * @authorxiaojun
- * @date2023/12/31 21:11
+ * @author xiaojun
+ * @date 2023/12/31 21:11
  */
 @Data
 public class MapperFactory<T> implements FactoryBean<T> {
@@ -22,7 +22,7 @@ public class MapperFactory<T> implements FactoryBean<T> {
     }
 
     public T getObject() {
-        InvocationHandler invocationHandler = new DynamicMapperProxy();
+        InvocationHandler invocationHandler = new DynamicMapperProxy<>(interfaceClass);
         return (T) Proxy.newProxyInstance
                 (interfaceClass.getClassLoader(), new Class[]{interfaceClass}, invocationHandler);
     }

@@ -14,13 +14,14 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 public class TestController {
-//    @Autowired
-//    ActivityMapper activityMapper;
+    @Autowired
+    ActivityMapper activityMapper;
 
     @Autowired
     Activity activity;
     @RequestMapping("/test")
     public String test() {
+        Activity activity1 = activityMapper.selectById(1);
 //        System.out.println("activity:"+activity);
         return "success";
     }

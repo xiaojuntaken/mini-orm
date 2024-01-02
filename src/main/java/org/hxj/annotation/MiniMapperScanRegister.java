@@ -44,16 +44,7 @@ public class MiniMapperScanRegister implements ImportBeanDefinitionRegistrar, Re
      */
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
-        //创建beanfactory构造器 00 00  00
-        BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(ActivityMapper.class);
-        //创建beanDefinition
-        GenericBeanDefinition beanDefinition = (GenericBeanDefinition) beanDefinitionBuilder.getRawBeanDefinition();
-        beanDefinition.getConstructorArgumentValues().addGenericArgumentValue(ActivityMapper.class);
-        //将bean的真实类型改变为FactoryBea
-        beanDefinition.setBeanClass(MapperFactory.class);
-        beanDefinition.getPropertyValues().add("interfaceClass", ActivityMapper.class);
-        beanDefinition.setAutowireMode(GenericBeanDefinition.AUTOWIRE_BY_TYPE);
-        registry.registerBeanDefinition(ActivityMapper.class.getSimpleName(), beanDefinition);
+
 
 
         //获取有@import注解的值
@@ -67,39 +58,49 @@ public class MiniMapperScanRegister implements ImportBeanDefinitionRegistrar, Re
                 List<Class<?>> clazzList = ClassLoadUtils.getClassesByPackageName(packageName);
                 for (Class<?> clazz : clazzList) {
                     //将包下的接口注册生成BeanDefinition
-                    String name = clazz.getName();
+                    //创建一个通用的beanDefinition，填充bean的class为接口的类
+                    BeanDefinitionBuilder beanDefinitionBuilder= BeanDefinitionBuilder.genericBeanDefinition(clazz);
+                    GenericBeanDefinition beanDefinition = (GenericBeanDefinition) beanDefinitionBuilder.getRawBeanDefinition();
+                    beanDefinition.getConstructorArgumentValues().addGenericArgumentValue(clazz);
+                    beanDefinition.setBeanClass(MapperFactory.class);
+                    beanDefinition.setAutowireMode(GenericBeanDefinition.AUTOWIRE_BY_TYPE);
+                    registry.registerBeanDefinition(clazz.getSimpleName(),beanDefinition);
 
-
-//                    BeanDefinitionBuilder beanDefinitionBuilder= BeanDefinitionBuilder.genericBeanDefinition(ActivityMapper.class);
-//                    GenericBeanDefinition  beanDefinition = (GenericBeanDefinition) beanDefinitionBuilder.getRawBeanDefinition();
-//                    beanDefinition.getConstructorArgumentValues().addGenericArgumentValue(clazz);
-//                    beanDefinition.setBeanClass(MapperFactory.class);
-//                    beanDefinition.setAutowireMode(GenericBeanDefinition.AUTOWIRE_BY_TYPE);
-//                    registry.registerBeanDefinition(clazz.getSimpleName(),beanDefinition);
-
-                    //获取继承的接口
-                    Type[] genericInterfaces = clazz.getGenericInterfaces();
-                    for (Type interfaces : genericInterfaces) {
-                        ParameterizedType parameterizedType = (ParameterizedType) interfaces;
-                        Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
-                        for (Type type : actualTypeArguments) {
-                            //接口继承接口的泛型-实体类泛型
-                            String modelClass = type.getTypeName();
-                            Class<?> modelClazz = Class.forName(modelClass);
-                            poMap.put(modelClazz.getSimpleName(), modelClazz);
-                            String resultSql = MysqlUtils.packageResultSqlByClass(modelClazz);
-                            String resultSql1 = MysqlUtils.packageResultSqlByClass(poMap.get(modelClazz.getSimpleName()));
-                            String tableName = StringUtils.toUnderScoreCase(modelClazz.getSimpleName());
-                            String sql = MysqlUtils.packBaseSql(resultSql, tableName, "");
-                            Connection connection = MysqlConfig.connectionMysql();
-                            StatementUtils.querySql(connection, sql);
-                        }
-                    }
+//                    //获取继承的接口
+//                    Type[] genericInterfaces = clazz.getGenericInterfaces();
+//                    for (Type interfaces : genericInterfaces) {
+//                        ParameterizedType parameterizedType = (ParameterizedType) interfaces;
+//                        Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+//                        for (Type type : actualTypeArguments) {
+//                            //接口继承接口的泛型-实体类泛型
+//                            String modelClass = type.getTypeName();
+//                            Class<?> modelClazz = Class.forName(modelClass);
+//                            poMap.put(modelClazz.getSimpleName(), modelClazz);
+//                            String resultSql = MysqlUtils.packageResultSqlByClass(modelClazz);
+//                            String resultSql1 = MysqlUtils.packageResultSqlByClass(poMap.get(modelClazz.getSimpleName()));
+//                            String tableName = StringUtils.toUnderScoreCase(modelClazz.getSimpleName());
+//                            String sql = MysqlUtils.packBaseSql(resultSql, tableName, "");
+//                            Connection connection = MysqlConfig.connectionMysql();
+//                            StatementUtils.querySql(connection, sql);
+//                        }
+//                    }
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
+    }
+    public void test(){
+        //创建beanfactory构造器
+//        BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(ActivityMapper.class);
+//        //创建beanDefinition
+//        GenericBeanDefinition beanDefinition = (GenericBeanDefinition) beanDefinitionBuilder.getRawBeanDefinition();
+//        beanDefinition.getConstructorArgumentValues().addGenericArgumentValue(ActivityMapper.class);
+//        //将bean的真实类型改变为FactoryBea
+//        beanDefinition.setBeanClass(MapperFactory.class);
+//        beanDefinition.getPropertyValues().add("interfaceClass", ActivityMapper.class);
+//        beanDefinition.setAutowireMode(GenericBeanDefinition.AUTOWIRE_BY_TYPE);
+//        registry.registerBeanDefinition(ActivityMapper.class.getSimpleName(), beanDefinition);
     }
 
 }

@@ -1,5 +1,6 @@
 package org.hxj.controller;
 
+import com.alibaba.fastjson.JSON;
 import org.hxj.entity.po.Activity;
 import org.hxj.mapper.ActivityMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,8 +22,7 @@ public class TestController {
     Activity activity;
     @RequestMapping("/test")
     public String test() {
-        Activity activity1 = activityMapper.selectById(1);
-//        System.out.println("activity:"+activity);
-        return "success";
+        Activity activity = activityMapper.selectById(1);
+        return JSON.toJSONString(activity);
     }
 }

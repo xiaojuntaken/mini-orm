@@ -1,9 +1,11 @@
 package org.hxj.core.mapper;
 
+import java.util.List;
+
 public interface BaseMapper<T>{
 
     T selectById(Object id);
 
-    T selectByParam(T t);
+    List<T> selectByParam(T t);
 
 }

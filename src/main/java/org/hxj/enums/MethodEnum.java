@@ -5,7 +5,7 @@ package org.hxj.enums;
  * @date2024/1/2 21:17
  */
 public enum MethodEnum {
-    SELECT_BY_ID("selectById","查询"),DELETE_BY_ID("deleteById","删除");
+    SELECT_BY_ID("selectById","根据主键查询"),SELECT_BY_PARAM("selectByParam","根据字段查询"),DELETE_BY_ID("deleteById","删除");
 
     private String methodName;
     private String methodDesc;

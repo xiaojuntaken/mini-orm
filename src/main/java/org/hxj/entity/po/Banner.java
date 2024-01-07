@@ -6,7 +6,7 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors
 public class Banner {
-    private int bannerId;
+    private Integer bannerId;
 
-    private int miniProgramId;
+    private String bannerName;
 }

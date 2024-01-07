@@ -1,18 +1,18 @@
 package org.hxj.factory;
 
 
+import com.alibaba.fastjson2.JSONWriterUTF16JDK8UF;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.hxj.config.MysqlConfig;
 import org.hxj.entity.po.Activity;
 import org.hxj.enums.MethodEnum;
+import org.hxj.table.TableMetaData;
+import org.hxj.utils.MysqlUtils;
 import org.hxj.utils.StringUtils;
 
 import java.lang.reflect.*;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 /**
  * @authorxiaojun
@@ -24,14 +24,12 @@ public class DynamicMapperProxy<T> implements InvocationHandler {
     //创建属性接受接口类
     private Class<T> interfaceClass;
 
-    private String tableName;
-
-    private Class<?> tableClass;
-
+    private TableMetaData tableMetaData;
 
     //动态代理创建对象时将将被代理的接口传入
-    public DynamicMapperProxy(Class<T> interfaceClass) {
+    public DynamicMapperProxy(Class<T> interfaceClass,TableMetaData tableMetaData) {
         this.interfaceClass = interfaceClass;
+        this.tableMetaData = tableMetaData;
     }
 
     //被动态代理创建的bean，被依赖注入的时候
@@ -41,58 +39,36 @@ public class DynamicMapperProxy<T> implements InvocationHandler {
         if (Object.class.equals(method.getDeclaringClass())) {
             return method.invoke(this, args);
         }
-        Type[] genericSuperclass = interfaceClass.getGenericInterfaces();
-        for (Type type : genericSuperclass) {
-            ParameterizedType parameterizedType = (ParameterizedType) type;
-            Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
-            for (Type a : actualTypeArguments) {
-                String enumClass = a.getTypeName();
-                Class<?> aClass = Class.forName(enumClass);
-                tableClass = aClass;
-                String[] split = enumClass.split("\\.");
-                String enumClassName = split[split.length - 1];
-                tableName = enumClassName;
-            }
-            System.out.println("");
-        }
-        //Type强转成子类ParameterizedType这样就可以通过子类的getActualTypeArguments获取类对象
-        String name = proxy.getClass().getName();
-        System.out.println("method:" + method.getName());
         return executeSql(method, args);
     }
 
     public Object executeSql(Method method, Object[] args) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, SQLException {
+        StringBuilder sql = new StringBuilder();
         String methodName = method.getName();
         if (MethodEnum.SELECT_BY_ID.getMethodName().equals(methodName)) {
-            Connection conn = MysqlConfig.connectionMysql();
-
-            //根据主键ID查询，返回实体类
-            StringBuilder sql = new StringBuilder();
-            ResultSet banner = conn.getMetaData().getPrimaryKeys(null, null, "banner");
-            sql.append("select * from ").append(tableName).append(" where id = ").append(args[0]);
+            sql.append("select * from ").append(tableMetaData.getTableName()).append(" where " + tableMetaData.getPkColumnName() + " = ").append(args[0]);
 //        /*
 //            通过Connection获取用于执行SQL语句的执行对象Statement
 //            Statement对象的作用就是向数据库执行指定的SQL语句。
 //         */
             try {
+                Connection conn = MysqlUtils.getConnection();
                 Statement statement = conn.createStatement();
-                ResultSet generatedKeys = statement.getGeneratedKeys();
-//                while(banner.next()){
-//                    String columnName = generatedKeys.getString("COLUMN_NAME");
-//                    System.out.println("");
-//                }
                 statement.execute(sql.toString());
                 ResultSet resultSet = statement.executeQuery(sql.toString());
-                Constructor<?> declaredConstructor = tableClass.getDeclaredConstructor();
+                Constructor<?> declaredConstructor = tableMetaData.getTableClass().getDeclaredConstructor();
                 Object instance = declaredConstructor.newInstance();
                 while (resultSet.next()) {
-                    Field[] declaredFields = tableClass.getDeclaredFields();
-                    for (Field field:declaredFields){
+                    Field[] declaredFields = tableMetaData.getTableClass().getDeclaredFields();
+                    for (Field field : declaredFields) {
                         field.setAccessible(true);
                         Class<?> fieldType = field.getType();
                         String fieldTypeName = fieldType.getName();
-                        if("int".equals(fieldTypeName)){
-                            field.set(instance,resultSet.getInt(StringUtils.toUnderScoreCase(field.getName())));
+                        if ("java.lang.Integer".equals(fieldTypeName)) {
+                            field.set(instance, resultSet.getInt(StringUtils.toUnderScoreCase(field.getName())));
+                        }
+                        if ("java.lang.String".equals(fieldTypeName)) {
+                            field.set(instance, resultSet.getString(StringUtils.toUnderScoreCase(field.getName())));
                         }
                     }
                 }
@@ -101,7 +77,10 @@ public class DynamicMapperProxy<T> implements InvocationHandler {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }else if(MethodEnum.SELECT_BY_PARAM.getMethodName().equals(methodName)){
+
         }
         return null;
     }
+
 }

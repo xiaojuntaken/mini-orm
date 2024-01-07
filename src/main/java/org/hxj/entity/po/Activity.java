@@ -6,6 +6,6 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors
 public class Activity {
-    private int id;
-    private int miniProgramId;
+    private Integer id;
+    private Integer miniProgramId;
 }

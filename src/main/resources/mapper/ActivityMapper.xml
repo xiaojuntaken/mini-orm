@@ -1,0 +1,11 @@
+<mapper>
+
+
+    <select id="test">
+        select * from activity where id in (
+        <for item="id" collection = "list" >
+            #{id}
+        </for>
+        )
+    </select>
+</mapper>

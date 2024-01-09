@@ -5,6 +5,7 @@ import org.hxj.entity.po.Activity;
 import org.hxj.entity.po.Banner;
 import org.hxj.mapper.ActivityMapper;
 import org.hxj.mapper.BannerMapper;
+import org.hxj.utils.XmlUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,6 +28,7 @@ public class TestController {
 
     @RequestMapping("/test")
     public String test() {
+        XmlUtils.readXml("ActivityMapper.xml");
         Activity activity = new Activity();
         activity.setId(1);
         activity.setMiniProgramId(40);

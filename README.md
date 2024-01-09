@@ -1,2 +1,4 @@
 spring boot 2.7以上废弃了spring。factories
 使用：META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports文件记录
+
+反射时如果属性是Integer这种类型，调用Field的getInt会报错，必须字段类型是int才可以用getInt,jdk设计如此

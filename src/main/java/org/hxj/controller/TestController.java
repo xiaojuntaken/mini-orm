@@ -27,10 +27,9 @@ public class TestController {
 
     @RequestMapping("/test")
     public String test() {
-//        Activity activity = activityMapper.selectById(1);
-//        Banner banner = bannerMapper.selectById(2);
         Activity activity = new Activity();
-        activity.setMiniProgramId(1);
+        activity.setId(1);
+        activity.setMiniProgramId(40);
         List<Activity> list = activityMapper.selectByParam(activity);
         return JSON.toJSONString(list);
     }

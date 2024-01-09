@@ -1,9 +1,14 @@
 package org.hxj.utils;
 
+import lombok.extern.slf4j.Slf4j;
+import org.hxj.enums.MethodEnum;
+import org.hxj.table.TableMetaData;
+
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.sql.Array;
-import java.sql.Connection;
-import java.sql.Driver;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -12,8 +17,9 @@ import java.util.Properties;
  * @author xiaojun
  * @date 2023/12/29 23:10
  */
+@Slf4j
 public class MysqlUtils {
-    private static Connection conn ;
+    private static Connection conn;
 
     public static void connectionMysql() {
         try {
@@ -44,9 +50,10 @@ public class MysqlUtils {
         }
     }
 
-    public static Connection getConnection(){
+    public static Connection getConnection() {
         return conn;
     }
+
     public static String packageResultSqlByClass(Class<?> clazz) {
         List<String> list = new ArrayList<>();
         Field[] fields = clazz.getDeclaredFields();
@@ -59,5 +66,60 @@ public class MysqlUtils {
 
     public static String packBaseSql(String resultSql, String tableName, String whereSql) {
         return "select " + resultSql + " from " + tableName + " " + whereSql + ";";
+    }
+
+    public static ResultSet executeSql(StringBuilder sql) {
+        try {
+            Connection conn = MysqlUtils.getConnection();
+            Statement statement = conn.createStatement();
+            log.info("SQL语句：" + sql.toString());
+            return statement.executeQuery(sql.toString());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static Object readAndReturnResult(ResultSet resultSet, Method method, TableMetaData tableMetaData) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, SQLException {
+        if (MethodEnum.SELECT_BY_ID.getMethodName().equals(method.getName())) {
+            Constructor<?> declaredConstructor = tableMetaData.getTableClass().getDeclaredConstructor();
+            Object instance = null;
+            instance = declaredConstructor.newInstance();
+            while (resultSet.next()) {
+                Field[] declaredFields = tableMetaData.getTableClass().getDeclaredFields();
+                for (Field field : declaredFields) {
+                    field.setAccessible(true);
+                    Class<?> fieldType = field.getType();
+                    String fieldTypeName = fieldType.getName();
+                    if ("java.lang.Integer".equals(fieldTypeName)) {
+                        field.set(instance, resultSet.getInt(StringUtils.toUnderScoreCase(field.getName())));
+                    }
+                    if ("java.lang.String".equals(fieldTypeName)) {
+                        field.set(instance, resultSet.getString(StringUtils.toUnderScoreCase(field.getName())));
+                    }
+                }
+            }
+        } else if (MethodEnum.SELECT_BY_PARAM.getMethodName().equals(method.getName())) {
+            List<Object> result = new ArrayList<>();
+            Constructor<?> declaredConstructor = tableMetaData.getTableClass().getDeclaredConstructor();
+            Object instance = declaredConstructor.newInstance();
+            Field[] declaredFields = tableMetaData.getTableClass().getDeclaredFields();
+            while (resultSet.next()) {
+                for (Field field : declaredFields) {
+                    field.setAccessible(true);
+                    Class<?> fieldType = field.getType();
+                    String fieldTypeName = fieldType.getName();
+                    if ("java.lang.Integer".equals(fieldTypeName)) {
+                        field.set(instance, resultSet.getInt(StringUtils.toUnderScoreCase(field.getName())));
+                    }
+                    if ("java.lang.String".equals(fieldTypeName)) {
+                        field.set(instance, resultSet.getString(StringUtils.toUnderScoreCase(field.getName())));
+                    }
+                }
+            }
+            result.add(instance);
+            return result;
+        }
+        return null;
     }
 }

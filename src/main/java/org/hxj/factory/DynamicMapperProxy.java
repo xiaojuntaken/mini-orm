@@ -27,7 +27,7 @@ public class DynamicMapperProxy<T> implements InvocationHandler {
     private TableMetaData tableMetaData;
 
     //动态代理创建对象时将将被代理的接口传入
-    public DynamicMapperProxy(Class<T> interfaceClass,TableMetaData tableMetaData) {
+    public DynamicMapperProxy(Class<T> interfaceClass, TableMetaData tableMetaData) {
         this.interfaceClass = interfaceClass;
         this.tableMetaData = tableMetaData;
     }
@@ -39,10 +39,13 @@ public class DynamicMapperProxy<T> implements InvocationHandler {
         if (Object.class.equals(method.getDeclaringClass())) {
             return method.invoke(this, args);
         }
-        return executeSql(method, args);
+        StringBuilder sql =packageSql(method, args);
+
+        ResultSet resultSet = MysqlUtils.executeSql(sql);
+        return MysqlUtils.readAndReturnResult(resultSet,method,tableMetaData);
     }
 
-    public Object executeSql(Method method, Object[] args) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, SQLException {
+    public StringBuilder packageSql(Method method, Object[] args) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, SQLException, NoSuchFieldException {
         StringBuilder sql = new StringBuilder();
         String methodName = method.getName();
         if (MethodEnum.SELECT_BY_ID.getMethodName().equals(methodName)) {
@@ -51,36 +54,44 @@ public class DynamicMapperProxy<T> implements InvocationHandler {
 //            通过Connection获取用于执行SQL语句的执行对象Statement
 //            Statement对象的作用就是向数据库执行指定的SQL语句。
 //         */
-            try {
-                Connection conn = MysqlUtils.getConnection();
-                Statement statement = conn.createStatement();
-                statement.execute(sql.toString());
-                ResultSet resultSet = statement.executeQuery(sql.toString());
-                Constructor<?> declaredConstructor = tableMetaData.getTableClass().getDeclaredConstructor();
-                Object instance = declaredConstructor.newInstance();
-                while (resultSet.next()) {
-                    Field[] declaredFields = tableMetaData.getTableClass().getDeclaredFields();
-                    for (Field field : declaredFields) {
-                        field.setAccessible(true);
-                        Class<?> fieldType = field.getType();
-                        String fieldTypeName = fieldType.getName();
-                        if ("java.lang.Integer".equals(fieldTypeName)) {
-                            field.set(instance, resultSet.getInt(StringUtils.toUnderScoreCase(field.getName())));
-                        }
-                        if ("java.lang.String".equals(fieldTypeName)) {
-                            field.set(instance, resultSet.getString(StringUtils.toUnderScoreCase(field.getName())));
-                        }
+        } else if (MethodEnum.SELECT_BY_PARAM.getMethodName().equals(methodName)) {
+            sql.append("select * from ").append(tableMetaData.getTableName()).append(" where 1=1 ");
+            Activity arg = (Activity) args[0];
+            Activity activity = new Activity();
+            activity.setId(1);
+            activity.setMiniProgramId(2);
+            Field id2 = activity.getClass().getDeclaredField("id");
+            id2.setAccessible(true);
+            Class<?> paramClass = arg.getClass();
+            Field[] fields = paramClass.getDeclaredFields();
+            for (Field field : fields) {
+                field.setAccessible(true);
+                String name = StringUtils.toUnderScoreCase(field.getName());
+                Type genericType = field.getGenericType();
+                String typeName = genericType.getTypeName();
+                if (typeName.equals("java.lang.Integer")) {
+                    if (field.get(arg) != null) {
+                        Integer value = (Integer) field.get(arg);
+                        packEqualsSql(sql, name, String.valueOf(value),false);
+                    }
+                } else if (typeName.equals("java.lang.String")) {
+                    String value = field.get(name).toString();
+                    if (field.get(name) != null) {
+                        packEqualsSql(sql, name, value,true);
                     }
                 }
-
-                return instance;
-            } catch (Exception e) {
-                e.printStackTrace();
             }
-        }else if(MethodEnum.SELECT_BY_PARAM.getMethodName().equals(methodName)){
-
         }
-        return null;
+        sql.append(";");
+        return sql;
+    }
+
+    public void packEqualsSql(StringBuilder stringBuilder, String columnName, String value,boolean isString) {
+        if(isString){
+            stringBuilder.append(" and " + columnName + " = '" + value + "'");
+        }else{
+            stringBuilder.append(" and " + columnName + " = " + value +" ");
+        }
     }
 
 }

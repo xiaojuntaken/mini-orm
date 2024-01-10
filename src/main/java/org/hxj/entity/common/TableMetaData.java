@@ -1,4 +1,4 @@
-package org.hxj.entity.table;
+package org.hxj.entity.common;
 
 import lombok.Data;
 
@@ -18,5 +18,6 @@ public class TableMetaData {
     private String pkColumnName;
 
     private List<FieldEntity> fieldList;
+
 
 }

@@ -7,9 +7,7 @@ import org.hxj.entity.common.XmlMethod;
 import org.springframework.util.CollectionUtils;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 /**
  * @authorxiaojun
@@ -18,42 +16,28 @@ import java.util.List;
 public class XmlUtils {
     private static final String path = "src/main/resources/mapper/";
 
-    public static List<XmlMethod> readXml(String xmlPath) {
+    public static Map<String, Element> readXml(String mapperName) {
+        Map<String, Element> methodMap = new HashMap<>();
         List<XmlMethod> result = new ArrayList<>();
         SAXReader reader = new SAXReader();
         Document doc = null;
         try {
-            doc = reader.read(new File(path + xmlPath));
+            File file = new File(path + mapperName + ".xml");
+            if(!file.exists()){
+                return null;
+            }
+            doc = reader.read(file);
         } catch (DocumentException e) {
             e.printStackTrace();
         }
         Element root = doc.getRootElement();
-        System.out.println("获取了根元素:" + root.getName());
         List<Element> list = root.elements();
         //获取所有方法节点并遍历
         for (Element element : list) {
-            XmlMethod xmlMethod = new XmlMethod();
-            //查询方法是否有子节点
-            List<Element> elements = element.elements();
-            if (CollectionUtil.isNotEmpty(elements)) {
-                for (int i = 0; i < elements.size(); i++) {
-                    Element child = elements.get(i);
-                    if (child.getName().equals("for")) {
-                        String item = child.attribute("item").getText();
-                        String textTrim = child.getTextTrim();
-                        if (textTrim.startsWith("#")) {
-                            String param = "''";
-                        }
-                        child.setText("%s");
-                        System.out.println("for:" + child.getText());
-                        System.out.println("end");
-                    }
-                }
-            }
-            String methodName = element.getName();
-            String sql = element.getStringValue().trim();
-            xmlMethod.setMethodName(methodName);
+            String methodName = element.attributeValue("id");
+            methodMap.put(methodName,element);
         }
-        return result;
+        MysqlUtils.getXmlMethodMap().put(mapperName,methodMap);
+        return methodMap;
     }
 }

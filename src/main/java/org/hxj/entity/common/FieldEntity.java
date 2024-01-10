@@ -1,4 +1,4 @@
-package org.hxj.entity.table;
+package org.hxj.entity.common;
 
 /**
  * @authorxiaojun

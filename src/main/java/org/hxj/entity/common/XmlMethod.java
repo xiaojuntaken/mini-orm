@@ -2,6 +2,7 @@ package org.hxj.entity.common;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
+import org.dom4j.Element;
 
 import java.util.List;
 
@@ -12,4 +13,5 @@ public class XmlMethod {
     private String methodName;
     private String sql;
     private List<String> params;
+    private Element methodElement;
 }

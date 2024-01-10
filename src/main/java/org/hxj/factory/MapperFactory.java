@@ -1,21 +1,19 @@
 package org.hxj.factory;
 
 import lombok.Data;
-import org.hxj.entity.common.XmlMethod;
-import org.hxj.entity.table.TableMetaData;
+import org.dom4j.Element;
+import org.hxj.entity.common.MethodData;
+import org.hxj.entity.common.TableMetaData;
 import org.hxj.utils.MysqlUtils;
 import org.hxj.utils.XmlUtils;
 import org.springframework.beans.factory.FactoryBean;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Proxy;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
+import java.util.Map;
 
 /**
  * @author xiaojun
@@ -36,9 +34,11 @@ public class MapperFactory<T> implements FactoryBean<T> {
 
         InvocationHandler invocationHandler = new DynamicMapperProxy<>(interfaceClass, tableMetaData);
 
-        String mapperName = interfaceClass.getName()+".xml";
-        List<XmlMethod> objects = XmlUtils.readXml(mapperName);
-        MysqlUtils.getXmlMethodMap().put(mapperName,objects);
+        String mapperName = interfaceClass.getSimpleName();
+        Map<String, Element> methodMap = XmlUtils.readXml(mapperName);
+        if (methodMap != null) {
+            MysqlUtils.getXmlMethodMap().put(mapperName, methodMap);
+        }
         return (T) Proxy.newProxyInstance
                 (interfaceClass.getClassLoader(), new Class[]{interfaceClass}, invocationHandler);
     }
@@ -75,10 +75,11 @@ public class MapperFactory<T> implements FactoryBean<T> {
                 tableMetaData.setTableName(enumClassName.toLowerCase());
             }
         }
+
+
         Connection conn = MysqlUtils.getConnection();
         //获取主键名
-        DatabaseMetaData metaData = null;
-        metaData = conn.getMetaData();
+        DatabaseMetaData metaData = conn.getMetaData();
         ResultSet rs = metaData.getPrimaryKeys(null, null, tableMetaData.getTableName());
         while (rs.next()) {
             tableMetaData.setPkColumnName(rs.getString("COLUMN_NAME"));

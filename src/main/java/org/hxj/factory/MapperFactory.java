@@ -1,8 +1,10 @@
 package org.hxj.factory;
 
 import lombok.Data;
+import org.hxj.entity.common.XmlMethod;
 import org.hxj.entity.table.TableMetaData;
 import org.hxj.utils.MysqlUtils;
+import org.hxj.utils.XmlUtils;
 import org.springframework.beans.factory.FactoryBean;
 
 import java.lang.reflect.InvocationHandler;
@@ -13,6 +15,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * @author xiaojun
@@ -33,6 +36,9 @@ public class MapperFactory<T> implements FactoryBean<T> {
 
         InvocationHandler invocationHandler = new DynamicMapperProxy<>(interfaceClass, tableMetaData);
 
+        String mapperName = interfaceClass.getName()+".xml";
+        List<XmlMethod> objects = XmlUtils.readXml(mapperName);
+        MysqlUtils.getXmlMethodMap().put(mapperName,objects);
         return (T) Proxy.newProxyInstance
                 (interfaceClass.getClassLoader(), new Class[]{interfaceClass}, invocationHandler);
     }

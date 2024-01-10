@@ -1,8 +1,7 @@
 package org.hxj.factory;
 
 import lombok.Data;
-import org.hxj.mapper.ActivityMapper;
-import org.hxj.table.TableMetaData;
+import org.hxj.entity.table.TableMetaData;
 import org.hxj.utils.MysqlUtils;
 import org.springframework.beans.factory.FactoryBean;
 

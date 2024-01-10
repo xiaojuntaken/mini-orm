@@ -1,13 +1,11 @@
 package org.hxj.factory;
 
 
-import com.alibaba.fastjson2.JSONWriterUTF16JDK8UF;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.hxj.config.MysqlConfig;
 import org.hxj.entity.po.Activity;
 import org.hxj.enums.MethodEnum;
-import org.hxj.table.TableMetaData;
+import org.hxj.entity.table.TableMetaData;
 import org.hxj.utils.MysqlUtils;
 import org.hxj.utils.StringUtils;
 

@@ -1,8 +1,9 @@
 package org.hxj.utils;
 
 import lombok.extern.slf4j.Slf4j;
+import org.hxj.entity.common.XmlMethod;
 import org.hxj.enums.MethodEnum;
-import org.hxj.table.TableMetaData;
+import org.hxj.entity.table.TableMetaData;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -11,6 +12,7 @@ import java.lang.reflect.Method;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -20,6 +22,7 @@ import java.util.Properties;
 @Slf4j
 public class MysqlUtils {
     private static Connection conn;
+    private static Map<String, List<XmlMethod>> xmlMethodMap;
 
     public static void connectionMysql() {
         try {
@@ -37,11 +40,18 @@ public class MysqlUtils {
             Class clazz = Class.forName(className);
             Driver driver = (Driver) clazz.newInstance();
             //2.提供url，指明具体操作的数据
-            String url = "jdbc:mysql://localhost:3306/cswl?serverTimezone=UTC";
+//            String url = "jdbc:mysql://localhost:3306/cswl?serverTimezone=UTC";
+//            //3.提供Properties的对象，指明用户名和密码
+//            Properties info = new Properties();
+//            info.setProperty("user", "root");
+//            info.setProperty("password", "root");
+            //2.提供url，指明具体操作的数据
+            String url = "jdbc:mysql://172.20.192.254:3306/bps?serverTimezone=UTC";
             //3.提供Properties的对象，指明用户名和密码
             Properties info = new Properties();
             info.setProperty("user", "root");
             info.setProperty("password", "root");
+
             //4.调用driver的connect()，获取连接
             Connection conn = driver.connect(url, info);
             MysqlUtils.conn = conn;
@@ -54,6 +64,9 @@ public class MysqlUtils {
         return conn;
     }
 
+    public static Map<String, List<XmlMethod>> getXmlMethodMap(){
+        return xmlMethodMap;
+    }
     public static String packageResultSqlByClass(Class<?> clazz) {
         List<String> list = new ArrayList<>();
         Field[] fields = clazz.getDeclaredFields();

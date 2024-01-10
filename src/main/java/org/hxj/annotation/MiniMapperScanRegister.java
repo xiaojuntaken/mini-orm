@@ -1,27 +1,15 @@
 package org.hxj.annotation;
 
 import lombok.extern.slf4j.Slf4j;
-import org.hxj.config.MysqlConfig;
-import org.hxj.entity.po.Activity;
 import org.hxj.factory.MapperFactory;
-import org.hxj.mapper.ActivityMapper;
-import org.hxj.table.TableMetaData;
 import org.hxj.utils.ClassLoadUtils;
 import org.hxj.utils.MysqlUtils;
-import org.hxj.utils.StatementUtils;
-import org.hxj.utils.StringUtils;
 import org.springframework.beans.factory.support.*;
 import org.springframework.context.ResourceLoaderAware;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.type.AnnotationMetadata;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

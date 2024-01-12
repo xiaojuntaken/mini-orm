@@ -34,11 +34,17 @@ public class TestHelloWorld {
      */
     @Test
     public void testExecuteXmlMethod(){
-        List<Integer> ids = new ArrayList<>();
-        ids.add(1);
-        ids.add(2);
-        ids.add(3);
-        List<Activity> activities = activityMapper.selectByMiniProgramId(ids,0);
+//        List<Activity> ids = new ArrayList<>();
+        List<Activity> list = new ArrayList<>();
+//        ids.add(1);
+//        ids.add(2);
+//        ids.add(3);
+        Activity activity = new Activity();
+        activity.setId(1);
+        list.add(activity);
+        list.add(activity);
+        List<Activity> activities = activityMapper.selectByMiniProgramId(list,0);
+
         System.out.println("单元测试");
     }
 }

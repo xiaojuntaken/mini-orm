@@ -87,14 +87,41 @@ public class DynamicMapperProxy<T> implements InvocationHandler {
                     String name = elements.get(i).getName();
                     //是for节点
                     if (name.equals("for")) {
-                        Parameter[] parameters = method.getParameters();
-                        for (Parameter parameter : parameters) {
-                            String name1 = parameter.getName();
-                            System.out.println("1");
+                        //xml中方法参数的名称
+                        String xmlParamName = elements.get(i).attribute("collection").getValue();
+                        //获取调用方法的参数
+                        Parameter[] methodParameters = method.getParameters();
+                        for (int j = 0; j < methodParameters.length; j++) {
+                            String paramName = methodParameters[j].getName();
+                            String typeName = methodParameters[j].getType().getName();
+                            if (xmlParamName.equals(paramName)) {
+                                //传参的值
+                                List<Object> arg = (List<Object>) args[i];
+                                String string = arg.toString();
+                                String textTrim = elements.get(i).getTextTrim();
+                                if (textTrim.contains(".")) {
+                                    List<String> xmlArgs = Arrays.asList(textTrim.split("."));
+                                    xmlArgs.remove(0);
+                                    for (int k = 0; k < arg.size(); k++) {
+                                        Class<? extends List> argClass = arg.getClass();
+//                                        Class tempClass  = argClass.getClass().get;
+                                        for (int m = 0; m < xmlArgs.size(); m++) {
+                                            Field declaredField = argClass.getDeclaredField(xmlArgs.get(m));
+                                            if (m == (xmlArgs.size() - 1)) {
+//                                                return declaredField.get(argClass);
+                                            }
+//                                            tempClass = declaredField.getType();
+
+                                        }
+                                    }
+                                }
+                                for (int k = 0; k < arg.size(); k++) {
+                                }
+                                System.out.println(arg.toString());
+                                System.out.println("");
+                            }
                         }
-                        String string = Arrays.toString(args);
-                        //几何参数的名称
-                        String paramName = elements.get(i).attribute("collection").getName();
+
                         for (Object obj : args) {
 
                         }
@@ -122,5 +149,7 @@ public class DynamicMapperProxy<T> implements InvocationHandler {
             stringBuilder.append(" and ").append(columnName).append(" = ").append(value).append(" ");
         }
     }
-
+    public List<String> analysisParam(String param){
+        return null;
+    }
 }

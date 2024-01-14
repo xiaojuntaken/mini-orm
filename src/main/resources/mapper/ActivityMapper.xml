@@ -1,9 +1,12 @@
 <mapper>
     <select id="selectByMiniProgramId" resultType="org.hxj.entity.po.Activity">
-        select * from activity where id in (
-        <for item="id" collection="ids">
-            #{id.id}
-        </for>
-        )
+        select * from activity where
+        <if test="ids!=null and ids.size!=0">
+            id in (
+            <for item="item" collection="ids" separator=",">
+                #{id}
+            </for>
+            )
+        </if>
     </select>
 </mapper>

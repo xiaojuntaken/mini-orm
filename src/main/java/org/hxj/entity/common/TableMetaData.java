@@ -19,5 +19,4 @@ public class TableMetaData {
 
     private List<FieldEntity> fieldList;
 
-
 }

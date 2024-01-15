@@ -10,13 +10,11 @@ import org.hxj.enums.MethodEnum;
 import org.hxj.entity.common.TableMetaData;
 import org.hxj.utils.MysqlUtils;
 import org.hxj.utils.StringUtils;
+import org.springframework.util.CollectionUtils;
 
 import java.lang.reflect.*;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @authorxiaojun
@@ -68,7 +66,6 @@ public class DynamicMapperProxy<T> implements InvocationHandler {
         } else if (MethodEnum.UPDATE_BY_ID.getMethodName().equals(methodName)) {
             sql.append("update ").append(tableMetaData.getTableName()).append(" set ");
             analysisParamAndPackageSql(args, sql, method.getName());
-            System.out.println("");
         }
         sql.append(";");
         return sql;
@@ -111,13 +108,15 @@ public class DynamicMapperProxy<T> implements InvocationHandler {
             List<Element> elements = element.elements();
             for (int i = 0; i < elements.size(); i++) {
                 String name = elements.get(i).getName();
-                //是for节点
-                if (name.equals("for")) {
-                    //xml中方法参数的名称
-                    analysisForElement(method, args, elements, i);
-                }
-                if (name.equals("if")) {
-                }
+                analysisSingleElement(elements.get(i),method,args);
+//                //是for节点
+//                if (name.equals("for")) {
+//                    //xml中方法参数的名称
+//                    analysisForElement(method, args, elements, i);
+//                }
+//                if (name.equals("if")) {
+//                    analysisForElement(method, args, elements, i);
+//                }
             }
             String text = element.getStringValue();
             text = text.replaceAll("\\n", "").replaceAll("\\\\n", "");
@@ -126,35 +125,66 @@ public class DynamicMapperProxy<T> implements InvocationHandler {
         sql.append(";");
         return sql;
     }
-    void analysisElement(){
+
+    void analysisElements(List<Element> elements) {
+//        for (int i = 0; i < elements.size(); i++) {
+//            if (elements.get(i).hasContent()) {
+//
+//            }
+//        }
+//        String elementName = element.getName();
+//        //判断是否有子节点
+//        if (element.hasContent()) {
+//            List<Element> elements = element.elements();
+//            for (int i = 0; i < elements.size(); i++) {
+//                if ("if".equals(elementName)) {
+//
+//                } else if ("for".equals(elementName)) {
+//
+//                }
+//            }
+//        }
+    }
+
+    void analysisSingleElement(Element element, Method method, Object[] args) throws NoSuchFieldException, IllegalAccessException {
+        if (!CollectionUtils.isEmpty(element.elements())) {
+            String elementName = element.getName();
+            if ("if".equals(elementName)) {
+                String testValue = element.attribute("test").getValue();
+                String[] split = testValue.split("and");
+                System.out.println("");
+            } else if ("for".equals(elementName)) {
+                String xmlParamName = element.attribute("collection").getValue();
+                String xmlSeparator = element.attribute("separator").getValue();
+                //节点中的值
+                String forText = element.getTextTrim();
+                //获取调用方法的参数
+                Parameter[] methodParameters = method.getParameters();
+                for (int j = 0; j < methodParameters.length; j++) {
+                    String paramName = methodParameters[j].getName();
+                    if (xmlParamName.equals(paramName)) {
+                        //传入的集合参数
+                        List<Object> forParamList = (List<Object>) args[j];
+                        String substring = forText.substring(2, forText.length() - 1);
+                        List<String> xmlArgs = Arrays.asList(substring.split("\\."));
+                        StringBuilder forParam = new StringBuilder();
+                        packageFroParam(xmlArgs, forParamList, forParam, xmlSeparator, 0);
+                        element.setText(forParam.toString());
+                        break;
+                    }
+                }
+            }
+
+        } else {
+            for (Element item :
+                    element.elements()) {
+                analysisSingleElement(item, method, args);
+            }
+        }
 
     }
 
     private void analysisForElement(Method method, Object[] args, List<Element> elements, int i) throws NoSuchFieldException, IllegalAccessException {
-        String xmlParamName = elements.get(i).attribute("collection").getValue();
-        String xmlItemName = elements.get(i).attribute("item").getValue();
-        String xmlSeparator = elements.get(i).attribute("separator").getValue();
-        //节点中的值
-        String forText = elements.get(i).getTextTrim();
-
-        //获取调用方法的参数
-        Parameter[] methodParameters = method.getParameters();
-        for (int j = 0; j < methodParameters.length; j++) {
-            String paramName = methodParameters[j].getName();
-            if (xmlParamName.equals(paramName)) {
-                //传入的集合参数
-                List<Object> forParamList = (List<Object>) args[j];
-                String substring = forText.substring(2, forText.length() - 1);
-                List<String> xmlArgs = Arrays.asList(substring.split("\\."));
-                StringBuilder forParam = new StringBuilder();
-                packageFroParam(xmlArgs, forParamList, forParam, xmlSeparator, 0);
-                elements.get(i).setText(forParam.toString());
-                break;
-            }
-        }
-    }
-
-    private void analysisIfElement(Method method, Object[] args, List<Element> elements, int i) throws NoSuchFieldException, IllegalAccessException {
         String xmlParamName = elements.get(i).attribute("collection").getValue();
         String xmlItemName = elements.get(i).attribute("item").getValue();
         String xmlSeparator = elements.get(i).attribute("separator").getValue();

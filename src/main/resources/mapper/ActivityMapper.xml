@@ -9,4 +9,14 @@
             )
         </if>
     </select>
+    <select id="selectByMiniProgramIds" resultType="org.hxj.entity.po.Activity">
+        select * from activity where
+        <if test="param.testMidVo.ids!=null and param.testMidVo.ids.size!=0">
+            id in (
+            <for item="item" collection="param.ids" separator=",">
+                #{id}
+            </for>
+            )
+        </if>
+    </select>
 </mapper>

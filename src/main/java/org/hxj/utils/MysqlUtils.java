@@ -48,7 +48,7 @@ public class MysqlUtils {
 //            info.setProperty("user", "root");
 //            info.setProperty("password", "root");
 //            //2.提供url，指明具体操作的数据
-            String url = "jdbc:mysql://172.20.192.254:3306/bps?serverTimezone=UTC";
+            String url = "jdbc:mysql://172.30.192.254:3306/bps?serverTimezone=UTC";
             //3.提供Properties的对象，指明用户名和密码
             Properties info = new Properties();
             info.setProperty("user", "root");

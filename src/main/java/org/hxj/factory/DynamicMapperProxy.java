@@ -3,6 +3,7 @@ package org.hxj.factory;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.dom4j.Attribute;
 import org.dom4j.Element;
 import org.hxj.core.mapper.BaseMapper;
 import org.hxj.entity.po.Activity;
@@ -106,9 +107,10 @@ public class DynamicMapperProxy<T> implements InvocationHandler {
         if (methodMap != null) {
             Element element = methodMap.get(method.getName());
             List<Element> elements = element.elements();
+            analysisElement(elements, method, args);
             for (int i = 0; i < elements.size(); i++) {
                 String name = elements.get(i).getName();
-                analysisSingleElement(elements.get(i),method,args);
+                analysisSingleElement(elements.get(i), method, args);
 //                //是for节点
 //                if (name.equals("for")) {
 //                    //xml中方法参数的名称
@@ -176,12 +178,103 @@ public class DynamicMapperProxy<T> implements InvocationHandler {
             }
 
         } else {
-            for (Element item :
-                    element.elements()) {
-                analysisSingleElement(item, method, args);
-            }
+            analysisElement(element.elements(), method, args);
         }
+    }
 
+    private void analysisElement(List<Element> elements, Method method, Object[] args) throws NoSuchFieldException, IllegalAccessException {
+        elements.stream().forEach(x -> {
+            if (CollectionUtils.isEmpty(x.elements())) {
+
+            } else {
+                //如果是if节点如果不符合直接remove节点
+                if (x.getName().equals("if")) {
+                    String test = x.attribute("test").getValue();
+                    String[] split = test.split("and");
+                    for (int i = 0; i < split.length; i++) {
+                        String item = split[i];
+                        try {
+                            String s = checkIfValue(item, method, args);
+                        } catch (NoSuchFieldException e) {
+                            throw new RuntimeException(e);
+                        } catch (IllegalAccessException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                    System.out.println("");
+                }
+            }
+
+        });
+
+
+    }
+
+    /**
+     * 解析获取 element 节点的值
+     *
+     * @return
+     */
+    public String checkIfValue(String testValue, Method method, Object[] args) throws NoSuchFieldException, IllegalAccessException {
+        String symbol = null;
+        if (testValue.contains(">=")) {
+            symbol = ">=";
+        } else if (testValue.contains(">")) {
+            symbol = ">";
+        } else if (testValue.contains("==")) {
+            symbol = "==";
+        } else if (testValue.contains("!=")) {
+            symbol = "!=";
+        } else if (testValue.contains("<=")) {
+            symbol = "<=";
+        } else if (testValue.contains("<")) {
+            symbol = "<";
+        }
+        String[] split = testValue.split(symbol);
+        //完整字段名
+        String wholeAttrName = split[0];
+//        String comparisonValue = split[1];
+        //完整字段名
+        getAttrValueByArray(wholeAttrName, method, args);
+        return null;
+    }
+
+    public void getAttrValueByArray(String wholeAttrName, Method method, Object[] args) throws NoSuchFieldException, IllegalAccessException {
+        String[] attrArr = wholeAttrName.split("\\\\.");
+        Parameter[] parameters = method.getParameters();
+        for (int i = 0; i < parameters.length; i++) {
+            String name = parameters[i].getName();
+            if (name.equals(attrArr[0])) {
+                //按照索引查找对应的参数
+                Object arg = args[i];
+                if (attrArr.length > 1) {
+                    //获取属性值
+                    Field declaredField = arg.getClass().getDeclaredField(attrArr[1]);
+                    Object o = declaredField.get(arg);
+                }
+            }
+            System.out.println("");
+
+        }
+        for (int i = 0; i < args.length; i++) {
+            Object arg = args[i];
+            Class<?> argClazz = arg.getClass();
+            Field declaredField = argClazz.getDeclaredField(attrArr[0]);
+            Object valObject = declaredField.get(arg);
+        }
+        String s = attrArr[0];
+    }
+
+    public void getValueByWholeAttrName(List<String> wholeAttrNameArr, Object arg, Object value) throws NoSuchFieldException, IllegalAccessException {
+        if (wholeAttrNameArr.size() == 1) {
+            Field declaredField = arg.getClass().getDeclaredField(wholeAttrNameArr.get(0));
+            value = declaredField.get(arg);
+        } else {
+            Field declaredField = arg.getClass().getDeclaredField(wholeAttrNameArr.get(0));
+            Object valueArg = declaredField.get(arg);
+            wholeAttrNameArr.remove(0);
+            getValueByWholeAttrName(wholeAttrNameArr, valueArg, value);
+        }
     }
 
     private void analysisForElement(Method method, Object[] args, List<Element> elements, int i) throws NoSuchFieldException, IllegalAccessException {

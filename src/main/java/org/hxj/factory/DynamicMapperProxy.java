@@ -233,14 +233,9 @@ public class DynamicMapperProxy<T> implements InvocationHandler {
         String[] split = testValue.split(symbol);
         //完整字段名
         String wholeAttrName = split[0];
-//        String comparisonValue = split[1];
+        String comparisonValue = split[1];
         //完整字段名
-        getAttrValueByArray(wholeAttrName, method, args);
-        return null;
-    }
-
-    public void getAttrValueByArray(String wholeAttrName, Method method, Object[] args) throws NoSuchFieldException, IllegalAccessException {
-        String[] attrArr = wholeAttrName.split("\\\\.");
+        String[] attrArr = wholeAttrName.split("\\.");
         Parameter[] parameters = method.getParameters();
         for (int i = 0; i < parameters.length; i++) {
             String name = parameters[i].getName();
@@ -250,30 +245,75 @@ public class DynamicMapperProxy<T> implements InvocationHandler {
                 if (attrArr.length > 1) {
                     //获取属性值
                     Field declaredField = arg.getClass().getDeclaredField(attrArr[1]);
+                    declaredField.setAccessible(true);
                     Object o = declaredField.get(arg);
+
+                    Object valueByWholeAttrName = getValueByWholeAttrName(new ArrayList<>(Arrays.asList(attrArr)), arg);
+                    judgeIsTrue(symbol, valueByWholeAttrName, comparisonValue);
+                    Field declaredField1 = valueByWholeAttrName.getClass().getDeclaredField("size");
+                    declaredField1.setAccessible(true);
+                    break;
                 }
             }
-            System.out.println("");
-
         }
-        for (int i = 0; i < args.length; i++) {
-            Object arg = args[i];
-            Class<?> argClazz = arg.getClass();
-            Field declaredField = argClazz.getDeclaredField(attrArr[0]);
-            Object valObject = declaredField.get(arg);
-        }
-        String s = attrArr[0];
+        return null;
     }
 
-    public void getValueByWholeAttrName(List<String> wholeAttrNameArr, Object arg, Object value) throws NoSuchFieldException, IllegalAccessException {
-        if (wholeAttrNameArr.size() == 1) {
-            Field declaredField = arg.getClass().getDeclaredField(wholeAttrNameArr.get(0));
-            value = declaredField.get(arg);
+    public boolean judgeIsTrue(String symbol, Object attrValue, String comparisonValue) {
+        boolean flag = false;
+        Class<?> clazz = attrValue.getClass();
+        if (symbol.equals("!=")) {
+            if (comparisonValue.equals("null")) {
+                if (attrValue != null) {
+                    flag = true;
+                }
+            } else if (String.valueOf(attrValue).equals(comparisonValue)) {
+                flag = true;
+            }
+        } else if (symbol.equals("==")) {
+            if (comparisonValue.equals("null")) {
+                if (attrValue != null) {
+                    flag = true;
+                }
+            } else if (String.valueOf(attrValue).equals(comparisonValue)) {
+                flag = true;
+            }
+        }
+        if (clazz.getName().equals("java.util.List")) {
+
+        }
+        return flag;
+
+    }
+
+    /**
+     * 解析返回if参数比较的值
+     *
+     * @return
+     */
+    public String returnXmlParamValueByParam(String comparisonValue) {
+        if (comparisonValue.equals("null")) {
+            return null;
+        } else if (comparisonValue.contains("'")) {
+            return comparisonValue.replaceAll("'", "");
         } else {
-            Field declaredField = arg.getClass().getDeclaredField(wholeAttrNameArr.get(0));
+            return comparisonValue;
+        }
+
+    }
+
+    public Object getValueByWholeAttrName(List<String> wholeAttrNameArr, Object arg) throws NoSuchFieldException, IllegalAccessException {
+        if (wholeAttrNameArr.size() == 1) {
+//            Field declaredField = arg.getClass().getDeclaredField(wholeAttrNameArr.get(0));
+//            declaredField.setAccessible(true);
+//            value = declaredField.get(arg);
+            return arg;
+        } else {
+            Field declaredField = arg.getClass().getDeclaredField(wholeAttrNameArr.get(1));
+            declaredField.setAccessible(true);
             Object valueArg = declaredField.get(arg);
             wholeAttrNameArr.remove(0);
-            getValueByWholeAttrName(wholeAttrNameArr, valueArg, value);
+            return getValueByWholeAttrName(wholeAttrNameArr, valueArg);
         }
     }
 

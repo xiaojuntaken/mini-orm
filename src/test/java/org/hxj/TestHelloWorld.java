@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.dom4j.Element;
 import org.hxj.entity.common.XmlMethod;
 import org.hxj.entity.po.Activity;
+import org.hxj.entity.vo.TestMidVo;
+import org.hxj.entity.vo.TestVo;
 import org.hxj.mapper.ActivityMapper;
 import org.hxj.mapper.TestMapper;
 import org.hxj.utils.MysqlUtils;
@@ -53,7 +55,13 @@ public class TestHelloWorld {
 
         list.add(activity);
         list.add(activity1);
-        List<Activity> activities = activityMapper.selectByMiniProgramId(ids,0);
+//        List<Activity> activities = activityMapper.selectByMiniProgramId(ids,0);
+        TestVo testVo = new TestVo();
+        TestMidVo testMidVo = new TestMidVo();
+        testMidVo.setIds(ids);
+        testVo.setTestMidVo(testMidVo);
+        List<Activity> activities = activityMapper.selectByMiniProgramIds(testVo,0);
+
         log.info("result======="+ JSON.toJSONString(activities));
         System.out.println("单元测试");
     }

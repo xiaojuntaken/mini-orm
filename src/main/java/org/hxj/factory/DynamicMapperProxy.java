@@ -182,26 +182,21 @@ public class DynamicMapperProxy<T> implements InvocationHandler {
         }
     }
 
-    private void analysisElement(List<Element> elements, Method method, Object[] args) throws NoSuchFieldException, IllegalAccessException {
-        elements.stream().forEach(x -> {
+    private void analysisElement(List<Element> elements, Method method, Object[] args) {
+        elements.forEach(x -> {
             if (CollectionUtils.isEmpty(x.elements())) {
 
             } else {
                 //如果是if节点如果不符合直接remove节点
                 if (x.getName().equals("if")) {
-                    String test = x.attribute("test").getValue();
-                    String[] split = test.split("and");
-                    for (int i = 0; i < split.length; i++) {
-                        String item = split[i];
-                        try {
-                            String s = checkIfValue(item, method, args);
-                        } catch (NoSuchFieldException e) {
-                            throw new RuntimeException(e);
-                        } catch (IllegalAccessException e) {
-                            throw new RuntimeException(e);
+                    try {
+                        boolean flag = checkIfElement(x, method, args);
+                        if(!flag){
+                            //去掉里面的节点
                         }
+                    } catch (NoSuchFieldException | IllegalAccessException e) {
+                        throw new RuntimeException(e);
                     }
-                    System.out.println("");
                 }
             }
 
@@ -215,53 +210,66 @@ public class DynamicMapperProxy<T> implements InvocationHandler {
      *
      * @return
      */
-    public String checkIfValue(String testValue, Method method, Object[] args) throws NoSuchFieldException, IllegalAccessException {
-        String symbol = null;
-        if (testValue.contains(">=")) {
-            symbol = ">=";
-        } else if (testValue.contains(">")) {
-            symbol = ">";
-        } else if (testValue.contains("==")) {
-            symbol = "==";
-        } else if (testValue.contains("!=")) {
-            symbol = "!=";
-        } else if (testValue.contains("<=")) {
-            symbol = "<=";
-        } else if (testValue.contains("<")) {
-            symbol = "<";
+    public boolean checkIfElement(Element ifElement, Method method, Object[] args) throws NoSuchFieldException, IllegalAccessException {
+        boolean result = true;
+        String testValue = ifElement.attribute("test").getValue();
+        String middleSymbol = "";
+        if (testValue.contains(" and ")) {
+            middleSymbol = "and";
+        } else if (testValue.contains(" or ")) {
+            middleSymbol = "or";
         }
-        String[] split = testValue.split(symbol);
-        //完整字段名
-        String wholeAttrName = split[0];
-        String comparisonValue = split[1];
-        //完整字段名
-        String[] attrArr = wholeAttrName.split("\\.");
-        Parameter[] parameters = method.getParameters();
-        for (int i = 0; i < parameters.length; i++) {
-            String name = parameters[i].getName();
-            if (name.equals(attrArr[0])) {
-                //按照索引查找对应的参数
-                Object arg = args[i];
-                if (attrArr.length > 1) {
-                    //获取属性值
-                    Field declaredField = arg.getClass().getDeclaredField(attrArr[1]);
-                    declaredField.setAccessible(true);
-                    Object o = declaredField.get(arg);
-
-                    Object valueByWholeAttrName = getValueByWholeAttrName(new ArrayList<>(Arrays.asList(attrArr)), arg);
-                    judgeIsTrue(symbol, valueByWholeAttrName, comparisonValue);
-                    Field declaredField1 = valueByWholeAttrName.getClass().getDeclaredField("size");
-                    declaredField1.setAccessible(true);
+        String[] ifSplit = testValue.split(middleSymbol);
+        for (int i = 0; i < ifSplit.length; i++) {
+            String item = ifSplit[i];
+            String symbol = null;
+            if (item.contains(">=")) {
+                symbol = ">=";
+            } else if (item.contains(">")) {
+                symbol = ">";
+            } else if (item.contains("==")) {
+                symbol = "==";
+            } else if (item.contains("!=")) {
+                symbol = "!=";
+            } else if (item.contains("<=")) {
+                symbol = "<=";
+            } else if (item.contains("<")) {
+                symbol = "<";
+            }
+            assert symbol != null;
+            String[] itemSplit = item.split(symbol);
+            //完整字段名
+            String wholeAttrName = itemSplit[0].trim();
+            String comparisonValue = itemSplit[1].trim();
+            //完整字段名
+            String[] attrArr = wholeAttrName.split("\\.");
+            Parameter[] parameters = method.getParameters();
+            Object arg = null;
+            for (int j = 0; j < parameters.length; j++) {
+                String name = parameters[j].getName();
+                if (name.equals(attrArr[0])) {
+                    //按照索引查找对应的参数
+                    arg = args[j];
+                    break;
+                }
+            }
+            if (attrArr.length > 1) {
+                Object value = getValueByWholeAttrName(new ArrayList<>(Arrays.asList(attrArr)), arg);
+                boolean flag = judgeIsTrue(symbol, value, comparisonValue);
+                //获取属性值
+                if (middleSymbol.equals("and") && !flag) {
+                    result=false;
+                    break;
+                } else if (middleSymbol.equals("or") && flag) {
                     break;
                 }
             }
         }
-        return null;
+        return result;
     }
 
     public boolean judgeIsTrue(String symbol, Object attrValue, String comparisonValue) {
         boolean flag = false;
-        Class<?> clazz = attrValue.getClass();
         if (symbol.equals("!=")) {
             if (comparisonValue.equals("null")) {
                 if (attrValue != null) {
@@ -278,9 +286,6 @@ public class DynamicMapperProxy<T> implements InvocationHandler {
             } else if (String.valueOf(attrValue).equals(comparisonValue)) {
                 flag = true;
             }
-        }
-        if (clazz.getName().equals("java.util.List")) {
-
         }
         return flag;
 
@@ -304,15 +309,12 @@ public class DynamicMapperProxy<T> implements InvocationHandler {
 
     public Object getValueByWholeAttrName(List<String> wholeAttrNameArr, Object arg) throws NoSuchFieldException, IllegalAccessException {
         if (wholeAttrNameArr.size() == 1) {
-//            Field declaredField = arg.getClass().getDeclaredField(wholeAttrNameArr.get(0));
-//            declaredField.setAccessible(true);
-//            value = declaredField.get(arg);
             return arg;
         } else {
             Field declaredField = arg.getClass().getDeclaredField(wholeAttrNameArr.get(1));
             declaredField.setAccessible(true);
             Object valueArg = declaredField.get(arg);
-            wholeAttrNameArr.remove(0);
+            wholeAttrNameArr.removeFirst();
             return getValueByWholeAttrName(wholeAttrNameArr, valueArg);
         }
     }

@@ -42,17 +42,17 @@ public class MysqlUtils {
             Class clazz = Class.forName(className);
             Driver driver = (Driver) clazz.newInstance();
             //2.提供url，指明具体操作的数据
-//            String url = "jdbc:mysql://localhost:3306/cswl?serverTimezone=UTC";
-//            //3.提供Properties的对象，指明用户名和密码
-//            Properties info = new Properties();
-//            info.setProperty("user", "root");
-//            info.setProperty("password", "root");
-//            //2.提供url，指明具体操作的数据
-            String url = "jdbc:mysql://172.20.192.254:3306/bps?serverTimezone=UTC";
+            String url = "jdbc:mysql://localhost:3306/cswl?serverTimezone=UTC";
             //3.提供Properties的对象，指明用户名和密码
             Properties info = new Properties();
             info.setProperty("user", "root");
             info.setProperty("password", "root");
+//            //2.提供url，指明具体操作的数据
+//            String url = "jdbc:mysql://172.20.192.254:3306/bps?serverTimezone=UTC";
+            //3.提供Properties的对象，指明用户名和密码
+//            Properties info = new Properties();
+//            info.setProperty("user", "root");
+//            info.setProperty("password", "root");
 
             //4.调用driver的connect()，获取连接
             Connection conn = driver.connect(url, info);
